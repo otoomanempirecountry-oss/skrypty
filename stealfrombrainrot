@@ -1,0 +1,224 @@
+-- [[ ELITE PANEL V59 | OMNIPOTENT MAX EDITION ]]
+-- WSZYSTKO: HITBOX (5-50), ESP, AUTO-STEAL, REACH, FAKE LAG, FLY, INF JUMP, SPIlocal GameID = 123456789 -- <--- TUTAJ WPISZ ID SWOJEJ GRY
+local GameID = 134763881293027 -- <--- TUTAJ WPISZ ID SWOJEJ GRY
+if game.PlaceId ~= GameID then 
+print ("loader jeszcze laduje inny skrypt poczekaj")  
+    return 
+end
+
+local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/xHeptc/Kavo-UI-Library/main/source.lua"))()
+local Window = Library.CreateLib("ELITE V59 | OMNIPOTENT MAX", "BloodTheme")
+
+local lp = game.Players.LocalPlayer
+local rs = game:GetService("RunService")
+local camera = workspace.CurrentCamera
+local mouse = lp:GetMouse()
+local uis = game:GetService("UserInputService")
+
+-- Zmienne
+local speedBoost, flyEnabled, flySpeed = 0, false, 50
+local airWalkEnabled, autoSteal, reachSize = false, false, 300
+local lagIntensity, spinEnabled = 0, false
+local infJumpEnabled = false
+local hbSize = 5 -- Startujemy od 5
+local hbEnabled = false
+
+-- [[ TAB: COMBAT (HITBOX 5-50) ]]
+local CombatSec = Window:NewTab("Combat"):NewSection("Hitboxy i Walka")
+
+CombatSec:NewSlider("Hitbox Size", "Rozmiar: 5 - 50", 50, 5, function(v)
+    hbSize = v
+end)
+
+CombatSec:NewToggle("Hitbox Expander & ESP", "Wielkie czerwone cele", function(v)
+    hbEnabled = v
+    task.spawn(function()
+        while hbEnabled do
+            task.wait(0.5)
+            for _, p in pairs(game.Players:GetPlayers()) do
+                if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                    local root = p.Character.HumanoidRootPart
+                    root.Size = Vector3.new(hbSize, hbSize, hbSize)
+                    root.Transparency = 0.6
+                    root.Color = Color3.fromRGB(255, 0, 0)
+                    root.CanCollide = false
+                end
+            end
+        end
+        if not hbEnabled then
+            for _, p in pairs(game.Players:GetPlayers()) do
+                if p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+                    p.Character.HumanoidRootPart.Size = Vector3.new(2, 2, 1)
+                    p.Character.HumanoidRootPart.Transparency = 1
+                end
+            end
+        end
+    end)
+end)
+
+-- [[ TAB: COLLECTION ]]
+local MainSec = Window:NewTab("Main"):NewSection("Zbieranie")
+
+MainSec:NewButton("INSTANT INTERACT", "Brak czekania przy E", function()
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("ProximityPrompt") then obj.HoldDuration = 0 end
+    end
+end)
+
+MainSec:NewSlider("MEGA REACH (E)", "Zasięg kółka E", 1000, 10, function(v)
+    for _, obj in pairs(workspace:GetDescendants()) do
+        if obj:IsA("ProximityPrompt") then obj.MaxActivationDistance = v end
+    end
+end)
+
+MainSec:NewToggle("AUTO-STEAL", "Zbiera przez ściany", function(v)
+    autoSteal = v
+    task.spawn(function()
+        while autoSteal do
+            task.wait(0.15)
+            if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+                for _, obj in pairs(workspace:GetDescendants()) do
+                    if obj:IsA("ProximityPrompt") and not obj.Parent.Name:lower():find("sell") then
+                        local part = obj.Parent:IsA("BasePart") and obj.Parent or obj.Parent:FindFirstChildWhichIsA("BasePart")
+                        if part and (lp.Character.HumanoidRootPart.Position - part.Position).Magnitude < 400 then
+                            local old = lp.Character.HumanoidRootPart.CFrame
+                            lp.Character.HumanoidRootPart.CFrame = part.CFrame
+                            task.wait(0.05)
+                            fireproximityprompt(obj)
+                            lp.Character.HumanoidRootPart.CFrame = old
+                            task.wait(0.05)
+                        end
+                    end
+                end
+            end
+        end
+    end)
+end)
+
+-- [[ TAB: MOVEMENT ]]
+local MoveSec = Window:NewTab("Movement"):NewSection("Ruch")
+
+MoveSec:NewToggle("Infinite Jump", "Skakanie w powietrzu", function(v) infJumpEnabled = v end)
+uis.JumpRequest:Connect(function()
+    if infJumpEnabled and lp.Character and lp.Character:FindFirstChildOfClass("Humanoid") then
+        lp.Character:FindFirstChildOfClass("Humanoid"):ChangeState("Jumping")
+    end
+end)
+
+MoveSec:NewSlider("Speed", "Szybkość", 300, 0, function(v) speedBoost = v end)
+MoveSec:NewToggle("Fly (3D)", "Latanie", function(v)
+    flyEnabled = v
+    task.spawn(function()
+        while flyEnabled and lp.Character do
+            rs.RenderStepped:Wait()
+            local root = lp.Character:FindFirstChild("HumanoidRootPart")
+            if root then
+                root.Velocity = Vector3.zero
+                root.CFrame = CFrame.new(root.Position, root.Position + camera.CFrame.LookVector) * CFrame.new(0, 0, -(flySpeed/10))
+            end
+        end
+    end)
+end)
+
+MoveSec:NewToggle("Air Walk", "Blokada Y", function(v)
+    airWalkEnabled = v
+    if v and lp.Character then
+        task.spawn(function()
+            local y = lp.Character.HumanoidRootPart.Position.Y
+            while airWalkEnabled and lp.Character do
+                local root = lp.Character.HumanoidRootPart
+                root.Velocity = Vector3.new(root.Velocity.X, 0, root.Velocity.Z)
+                root.CFrame = CFrame.new(root.Position.X, y, root.Position.Z) * root.CFrame.Rotation
+                rs.RenderStepped:Wait()
+            end
+        end)
+    end
+end)
+
+-- [[ TAB: EXPLOITS ]]
+local ExpSec = Window:NewTab("Exploits"):NewSection("Funkcje")
+
+ExpSec:NewToggle("Noclip", "Przez ściany", function(v)
+    _G.Noc = v
+    rs.Stepped:Connect(function()
+        if _G.Noc and lp.Character then
+            for _, p in pairs(lp.Character:GetDescendants()) do if p:IsA("BasePart") then p.CanCollide = false end end
+        end
+    end)
+end)
+
+ExpSec:NewToggle("Tryb Leżenia", "Lay Down", function(v)
+    if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+        local root = lp.Character.HumanoidRootPart
+        if v then
+            root.RootJoint.C0 = CFrame.new(0, 0, 0) * CFrame.Angles(math.rad(-90), 0, 0)
+            lp.Character.Humanoid.PlatformStand = true
+        else
+            root.RootJoint.C0 = CFrame.new(0, 0, 0) * CFrame.Angles(0, 0, 0)
+            lp.Character.Humanoid.PlatformStand = false
+        end
+    end
+end)
+
+ExpSec:NewButton("Click TP (CTRL+Click)", "Teleport pod myszkę", function()
+    mouse.Button1Down:Connect(function()
+        if uis:IsKeyDown(Enum.KeyCode.LeftControl) then
+            lp.Character.HumanoidRootPart.CFrame = CFrame.new(mouse.Hit.p + Vector3.new(0, 3, 0))
+        end
+    end)
+end)
+
+-- [[ TAB: TROLL ]]
+local TrollSec = Window:NewTab("Troll"):NewSection("Troll & Lag")
+
+TrollSec:NewToggle("Spinbot", "Kręciołek", function(v)
+    spinEnabled = v
+    task.spawn(function()
+        while spinEnabled do
+            if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+                lp.Character.HumanoidRootPart.CFrame *= CFrame.Angles(0, math.rad(50), 0)
+            end
+            rs.RenderStepped:Wait()
+        end
+    end)
+end)
+
+TrollSec:NewSlider("Fake Lag", "Moc ducha", 20, 0, function(v) lagIntensity = v end)
+TrollSec:NewToggle("Włącz Fake Lag", "Laguj u innych", function(v)
+    _G.FL = v
+    task.spawn(function()
+        local count = 0
+        while _G.FL do
+            rs.Heartbeat:Wait()
+            if lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+                count = count + 1
+                if count <= lagIntensity then lp.Character.HumanoidRootPart.Velocity = Vector3.new(0,-2,0) else count = 0 end
+            end
+        end
+    end)
+end)
+
+-- [[ TAB: VISUALS ]]
+local VisSec = Window:NewTab("Visuals"):NewSection("ESP & Bright")
+VisSec:NewButton("ESP Graczy", "Podświetla ludzi", function()
+    for _, p in pairs(game.Players:GetPlayers()) do
+        if p ~= lp and p.Character then
+            local h = p.Character:FindFirstChild("Highlight") or Instance.new("Highlight", p.Character)
+            h.FillColor = Color3.fromRGB(255, 0, 0)
+        end
+    end
+end)
+VisSec:NewButton("Full Bright", "Dzień", function()
+    game:GetService("Lighting").Brightness = 2
+    game:GetService("Lighting").GlobalShadows = false
+end)
+
+-- Heartbeat Speed
+rs.Heartbeat:Connect(function()
+    if speedBoost > 0 and lp.Character and lp.Character:FindFirstChild("HumanoidRootPart") then
+        local hum = lp.Character:FindFirstChild("Humanoid")
+        if hum and hum.MoveDirection.Magnitude > 0 then
+            lp.Character.HumanoidRootPart.CFrame += (hum.MoveDirection * (speedBoost / 15))
+        end
+    end
+end)
