@@ -1,12 +1,12 @@
--- [[ ELITE PANEL V73 | ULTIMATE INTERACT REACH ]]
--- FIX: JEŚLI STANDARDOWE METODY NIE DZIAŁAJĄ
+-- [[ ELITE PANEL V74 | SEPARATED REACH & AUTO ]]
 -- OPTIMIZED FOR DELTA MOBILE | 100% UNC & SYNC
+-- ROZDZIELONE FUNKCJE INTERAKCJI
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "ELITE V73 | GOD REACH",
-   LoadingTitle = "Ładowanie Systemu Przymusu...",
+   Name = "ELITE V74 | STABLE INTERACT",
+   LoadingTitle = "Ładowanie Systemów...",
    LoadingSubtitle = "by Gemini",
    ConfigurationSaving = { Enabled = false },
    KeySystem = false
@@ -17,13 +17,14 @@ local rs = game:GetService("RunService")
 
 -- Zmienne
 local reachRange = 100
-local autoInteract = false
+local autoInteractEnabled = false
+local passiveReachEnabled = false
 
--- [[ TAB: REACH ]]
-local ReachTab = Window:CreateTab("God Reach", 4483362458)
+-- [[ TAB: REACH CONTROL ]]
+local ReachTab = Window:CreateTab("Interact Control", 4483362458)
 
 ReachTab:CreateSlider({
-   Name = "Zasięg Reach",
+   Name = "Ustaw Zasięg (Reach)",
    Range = {10, 1000},
    Increment = 10,
    CurrentValue = 100,
@@ -33,37 +34,52 @@ ReachTab:CreateSlider({
 })
 
 ReachTab:CreateToggle({
-   Name = "Włącz ULTIMATE REACH",
+   Name = "Passive Reach (Zasięg kółka E)",
    CurrentValue = false,
+   Info = "Zwiększa dystans, z którego widzisz i możesz kliknąć 'E'",
    Callback = function(v)
-      autoInteract = v
+      passiveReachEnabled = v
+      task.spawn(function()
+         while passiveReachEnabled do
+            task.wait(0.5)
+            for _, obj in pairs(workspace:GetDescendants()) do
+               if not passiveReachEnabled then break end
+               if obj:IsA("ProximityPrompt") then
+                  obj.MaxActivationDistance = reachRange
+               end
+            end
+         end
+      end)
+   end,
+})
+
+ReachTab:CreateToggle({
+   Name = "AUTO-INTERACT (Samo klika)",
+   CurrentValue = false,
+   Info = "Skrypt sam będzie wciskać 'E' za Ciebie w zasięgu Reach",
+   Callback = function(v)
+      autoInteractEnabled = v
       if v then
          task.spawn(function()
-            while autoInteract do
+            while autoInteractEnabled do
                task.wait(0.1)
                local char = lp.Character
                local root = char and char:FindFirstChild("HumanoidRootPart")
                
                if root then
                   for _, obj in pairs(workspace:GetDescendants()) do
-                     if not autoInteract then break end
+                     if not autoInteractEnabled then break end
                      
-                     -- Szukamy interakcji
                      if obj:IsA("ProximityPrompt") then
-                        local target = obj.Parent
-                        if target and target:IsA("BasePart") then
-                           local dist = (root.Position - target.Position).Magnitude
+                        local parent = obj.Parent
+                        if parent and parent:IsA("BasePart") then
+                           local dist = (root.Position - parent.Position).Magnitude
                            
                            if dist <= reachRange then
-                              -- METODA 1: Wymuszenie zasięgu w kółku
-                              obj.MaxActivationDistance = reachRange
-                              
-                              -- METODA 2: Próba UNC Fire (najszybsza)
+                              -- Wykonujemy interakcję (Hybryda UNC)
                               fireproximityprompt(obj)
-                              
-                              -- METODA 3: FireTouch (jeśli przycisk wymaga dotknięcia pola)
-                              firetouchinterest(root, target, 0)
-                              firetouchinterest(root, target, 1)
+                              firetouchinterest(root, parent, 0)
+                              firetouchinterest(root, parent, 1)
                            end
                         end
                      end
@@ -72,20 +88,6 @@ ReachTab:CreateToggle({
             end
          end)
       end
-   end,
-})
-
-ReachTab:CreateSection("Dodatki")
-
-ReachTab:CreateButton({
-   Name = "Instant Hold (Usuń czekanie)",
-   Callback = function()
-      for _, v in pairs(workspace:GetDescendants()) do
-         if v:IsA("ProximityPrompt") then
-            v.HoldDuration = 0
-         end
-      end
-      Rayfield:Notify({Title = "Reach", Content = "Usunięto czas trzymania E!", Duration = 2})
    end,
 })
 
@@ -112,7 +114,7 @@ MoveTab:CreateToggle({
 
 MoveTab:CreateSlider({
    Name = "WalkSpeed",
-   Range = {16, 300},
+   Range = {16, 350},
    Increment = 1,
    CurrentValue = 16,
    Callback = function(v)
@@ -124,6 +126,16 @@ MoveTab:CreateSlider({
 
 -- [[ TAB: UTILITY ]]
 local UtilTab = Window:CreateTab("Utility", 4483362458)
+
+UtilTab:CreateButton({
+   Name = "Instant Hold (No Wait)",
+   Callback = function()
+      for _, v in pairs(workspace:GetDescendants()) do
+         if v:IsA("ProximityPrompt") then v.HoldDuration = 0 end
+      end
+      Rayfield:Notify({Title = "Reach", Content = "Zredukowano czas trzymania E do 0!", Duration = 2})
+   end,
+})
 
 UtilTab:CreateButton({
    Name = "Anti-AFK",
