@@ -1,0 +1,135 @@
+-- [[ ELITE PANEL V71 | MAGNET REACH ]]
+-- FIX: JEŚLI FIRETOUCH NIE DZIAŁA, TO PRZYCIĄGA OBIEKTY
+-- OPTIMIZED FOR DELTA MOBILE
+
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+local Window = Rayfield:CreateWindow({
+   Name = "ELITE V71 | MAGNET MASTER",
+   LoadingTitle = "Inicjacja Magnesu...",
+   LoadingSubtitle = "by Gemini",
+   ConfigurationSaving = { Enabled = false },
+   KeySystem = false
+})
+
+local lp = game.Players.LocalPlayer
+local rs = game:GetService("RunService")
+
+-- Zmienne
+local magnetEnabled = false
+local magnetRange = 150
+local autoJump = false
+
+-- [[ TAB: FARM ]]
+local FarmTab = Window:CreateTab("Magnes & Farm", 4483362458)
+
+FarmTab:CreateSlider({
+   Name = "Zasięg Magnesu (Reach)",
+   Range = {10, 800},
+   Increment = 10,
+   CurrentValue = 150,
+   Callback = function(v)
+      magnetRange = v
+   end,
+})
+
+FarmTab:CreateToggle({
+   Name = "Włącz Magnes (Pull Items)",
+   CurrentValue = false,
+   Callback = function(v)
+      magnetEnabled = v
+      if v then
+         task.spawn(function()
+            while magnetEnabled do
+               task.wait(0.1) -- Stabilność pod mobile
+               local char = lp.Character
+               local root = char and char:FindFirstChild("HumanoidRootPart")
+               
+               if root then
+                  for _, obj in pairs(workspace:GetDescendants()) do
+                     if not magnetEnabled then break end
+                     
+                     -- Szukamy mózgów/monet (zazwyczaj mają TouchTransmitter)
+                     if obj:IsA("TouchTransmitter") then
+                        local item = obj.Parent
+                        if item and item:IsA("BasePart") then
+                           local dist = (root.Position - item.Position).Magnitude
+                           if dist <= magnetRange then
+                              -- FIZYCZNE PRZYCIĄGANIE (Omija brak firetouchinterest)
+                              item.CFrame = root.CFrame
+                              -- Opcjonalnie: firetouchinterest dla pewności
+                              firetouchinterest(root, item, 0)
+                              firetouchinterest(root, item, 1)
+                           end
+                        end
+                     end
+                  end
+               end
+            end
+         end)
+      end
+   end,
+})
+
+FarmTab:CreateSection("Auto-Jump")
+
+FarmTab:CreateToggle({
+   Name = "Auto-Jump",
+   CurrentValue = false,
+   Callback = function(v)
+      autoJump = v
+      task.spawn(function()
+         while autoJump do
+            task.wait(0.05)
+            if lp.Character and lp.Character:FindFirstChild("Humanoid") then
+               if lp.Character.Humanoid.FloorMaterial ~= Enum.Material.Air then
+                  lp.Character.Humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+               end
+            end
+         end
+      end)
+   end,
+})
+
+-- [[ TAB: COMBAT ]]
+local CombatTab = Window:CreateTab("Combat", 4483362458)
+
+CombatTab:CreateButton({
+   Name = "Powiększ Hitboxy (ESP Mode)",
+   Callback = function()
+      for _, p in pairs(game.Players:GetPlayers()) do
+         if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            local hrp = p.Character.HumanoidRootPart
+            hrp.Size = Vector3.new(15, 15, 15)
+            hrp.Transparency = 0.7
+            hrp.Color = Color3.fromRGB(255, 0, 0)
+            hrp.CanCollide = false
+         end
+      end
+      Rayfield:Notify({Title = "Hitboxy", Content = "Powiększono wszystkich graczy!", Duration = 2})
+   end,
+})
+
+-- [[ TAB: UTILITY ]]
+local UtilTab = Window:CreateTab("Utility", 4483362458)
+
+UtilTab:CreateButton({
+   Name = "Anti-AFK",
+   Callback = function()
+      lp.Idled:Connect(function()
+         game:GetService("VirtualUser"):CaptureController()
+         game:GetService("VirtualUser"):ClickButton2(Vector2.new())
+      end)
+   end,
+})
+
+UtilTab:CreateButton({
+   Name = "Invisible FE",
+   Callback = function()
+      if lp.Character then
+         for _, v in pairs(lp.Character:GetDescendants()) do
+            if v:IsA("BasePart") or v:IsA("Decal") then v.Transparency = 1 end
+         end
+      end
+   end,
+})
