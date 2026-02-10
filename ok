@@ -1,12 +1,12 @@
--- [[ ELITE PANEL V71 | MAGNET REACH ]]
--- FIX: JEŚLI FIRETOUCH NIE DZIAŁA, TO PRZYCIĄGA OBIEKTY
+-- [[ ELITE PANEL V72 | PROXIMITY REACH MASTER ]]
+-- CEL: Zwiększenie zasięgu interakcji (Kółka E) i Auto-Interact
 -- OPTIMIZED FOR DELTA MOBILE
 
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
 local Window = Rayfield:CreateWindow({
-   Name = "ELITE V71 | MAGNET MASTER",
-   LoadingTitle = "Inicjacja Magnesu...",
+   Name = "ELITE V72 | INTERACT REACH",
+   LoadingTitle = "Inicjacja Systemu E...",
    LoadingSubtitle = "by Gemini",
    ConfigurationSaving = { Enabled = false },
    KeySystem = false
@@ -16,70 +16,90 @@ local lp = game.Players.LocalPlayer
 local rs = game:GetService("RunService")
 
 -- Zmienne
-local magnetEnabled = false
-local magnetRange = 150
-local autoJump = false
+local proximityReach = 100
+local autoInteract = false
+local instantInteract = false
 
--- [[ TAB: FARM ]]
-local FarmTab = Window:CreateTab("Magnes & Farm", 4483362458)
+-- [[ TAB: REACH E ]]
+local ReachTab = Window:CreateTab("Interact Reach", 4483362458)
 
-FarmTab:CreateSlider({
-   Name = "Zasięg Magnesu (Reach)",
-   Range = {10, 800},
+ReachTab:CreateSlider({
+   Name = "Zasięg Interakcji (Reach)",
+   Range = {10, 1000},
    Increment = 10,
-   CurrentValue = 150,
+   CurrentValue = 100,
    Callback = function(v)
-      magnetRange = v
+      proximityReach = v
    end,
 })
 
-FarmTab:CreateToggle({
-   Name = "Włącz Magnes (Pull Items)",
+ReachTab:CreateToggle({
+   Name = "Włącz Proximity Reach",
    CurrentValue = false,
    Callback = function(v)
-      magnetEnabled = v
-      if v then
-         task.spawn(function()
-            while magnetEnabled do
-               task.wait(0.1) -- Stabilność pod mobile
-               local char = lp.Character
-               local root = char and char:FindFirstChild("HumanoidRootPart")
-               
-               if root then
-                  for _, obj in pairs(workspace:GetDescendants()) do
-                     if not magnetEnabled then break end
-                     
-                     -- Szukamy mózgów/monet (zazwyczaj mają TouchTransmitter)
-                     if obj:IsA("TouchTransmitter") then
-                        local item = obj.Parent
-                        if item and item:IsA("BasePart") then
-                           local dist = (root.Position - item.Position).Magnitude
-                           if dist <= magnetRange then
-                              -- FIZYCZNE PRZYCIĄGANIE (Omija brak firetouchinterest)
-                              item.CFrame = root.CFrame
-                              -- Opcjonalnie: firetouchinterest dla pewności
-                              firetouchinterest(root, item, 0)
-                              firetouchinterest(root, item, 1)
-                           end
-                        end
+      _G.ProxReach = v
+      task.spawn(function()
+         while _G.ProxReach do
+            task.wait(0.2)
+            for _, obj in pairs(workspace:GetDescendants()) do
+               if obj:IsA("ProximityPrompt") then
+                  -- Zwiększamy zasięg kółka E
+                  obj.MaxActivationDistance = proximityReach
+                  
+                  -- Jeśli Instant Interact jest włączone
+                  if instantInteract then
+                     obj.HoldDuration = 0
+                  end
+               end
+            end
+         end
+      end)
+   end,
+})
+
+ReachTab:CreateToggle({
+   Name = "Instant Interact (Bez czekania)",
+   CurrentValue = false,
+   Callback = function(v)
+      instantInteract = v
+   end,
+})
+
+ReachTab:CreateToggle({
+   Name = "AUTO-INTERACT (Samo klika E)",
+   CurrentValue = false,
+   Callback = function(v)
+      autoInteract = v
+      task.spawn(function()
+         while autoInteract do
+            task.wait(0.1)
+            for _, obj in pairs(workspace:GetDescendants()) do
+               if obj:IsA("ProximityPrompt") then
+                  local parent = obj.Parent
+                  if parent and parent:IsA("BasePart") then
+                     local dist = (lp.Character.HumanoidRootPart.Position - parent.Position).Magnitude
+                     if dist <= proximityReach then
+                        -- Wywołuje interakcję bez klikania
+                        fireproximityprompt(obj)
                      end
                   end
                end
             end
-         end)
-      end
+         end
+      end)
    end,
 })
 
-FarmTab:CreateSection("Auto-Jump")
+-- [[ TAB: MOVEMENT ]]
+local MoveTab = Window:CreateTab("Movement", 4483362458)
 
-FarmTab:CreateToggle({
+MoveTab:CreateToggle({
    Name = "Auto-Jump",
    CurrentValue = false,
    Callback = function(v)
-      autoJump = v
+      _G.AJ = v
       task.spawn(function()
-         while autoJump do
+         while _G.AJ do
             task.wait(0.05)
             if lp.Character and lp.Character:FindFirstChild("Humanoid") then
                if lp.Character.Humanoid.FloorMaterial ~= Enum.Material.Air then
@@ -91,22 +111,15 @@ FarmTab:CreateToggle({
    end,
 })
 
--- [[ TAB: COMBAT ]]
-local CombatTab = Window:CreateTab("Combat", 4483362458)
-
-CombatTab:CreateButton({
-   Name = "Powiększ Hitboxy (ESP Mode)",
-   Callback = function()
-      for _, p in pairs(game.Players:GetPlayers()) do
-         if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-            local hrp = p.Character.HumanoidRootPart
-            hrp.Size = Vector3.new(15, 15, 15)
-            hrp.Transparency = 0.7
-            hrp.Color = Color3.fromRGB(255, 0, 0)
-            hrp.CanCollide = false
-         end
+MoveTab:CreateSlider({
+   Name = "Speed",
+   Range = {16, 300},
+   Increment = 1,
+   CurrentValue = 16,
+   Callback = function(v)
+      if lp.Character and lp.Character:FindFirstChild("Humanoid") then
+         lp.Character.Humanoid.WalkSpeed = v
       end
-      Rayfield:Notify({Title = "Hitboxy", Content = "Powiększono wszystkich graczy!", Duration = 2})
    end,
 })
 
@@ -124,11 +137,12 @@ UtilTab:CreateButton({
 })
 
 UtilTab:CreateButton({
-   Name = "Invisible FE",
+   Name = "Powiększ Hitboxy Graczy",
    Callback = function()
-      if lp.Character then
-         for _, v in pairs(lp.Character:GetDescendants()) do
-            if v:IsA("BasePart") or v:IsA("Decal") then v.Transparency = 1 end
+      for _, p in pairs(game.Players:GetPlayers()) do
+         if p ~= lp and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            p.Character.HumanoidRootPart.Size = Vector3.new(15, 15, 15)
+            p.Character.HumanoidRootPart.Transparency = 0.7
          end
       end
    end,
